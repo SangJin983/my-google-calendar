@@ -5,7 +5,8 @@
       "@features/*": ["./src/features/*"],
       "@pages/*": ["./src/pages/*"],
       "@config/*": ["./src/config/*"],
-      "@services/*": ["./src/services/*"]
+      "@services/*": ["./src/services/*"],
+      "@common/*": ["./src/common/*"]
     }
   }
 }
