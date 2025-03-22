@@ -1,8 +1,18 @@
+import CalendarPage from "@pages/CalendarPage";
+import EventDetailPage from "@pages/EventDetailPage";
+import EventFormPage from "@pages/EventFormPage";
+import { Navigate, Route, Routes } from "react-router-dom";
+
 function App() {
   return (
-    <>
-      <div>마이 구글 캘린더</div>
-    </>
+    <Routes>
+      <Route path="/" element={<Navigate to="/calendar" replace />} />
+      <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/events/new" element={<EventFormPage />} />
+      <Route path="/events/:eventId" element={<EventDetailPage />} />
+
+      <Route path="*" element={<div>404 Not Found</div>} />
+    </Routes>
   );
 }
 
