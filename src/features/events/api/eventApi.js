@@ -2,8 +2,8 @@ import { supabase } from "@services/supabaseClient";
 
 const EVENT_DOMAIN = "events";
 
-const executeSupabaseOperation = async (operationPromise) => {
-  const { data, error } = await operationPromise;
+const executeSupabaseQuery = async (queryPromise) => {
+  const { data, error } = await queryPromise;
 
   if (error) {
     throw error;
@@ -14,12 +14,12 @@ const executeSupabaseOperation = async (operationPromise) => {
 
 export const fetchEventsApi = async () => {
   const selectAllEvents = supabase.from(EVENT_DOMAIN).select("*");
-  return await executeSupabaseOperation(selectAllEvents);
+  return await executeSupabaseQuery(selectAllEvents);
 };
 
 export const createEventApi = async (eventData) => {
   const createEvent = supabase.from(EVENT_DOMAIN).insert(eventData).select();
-  return await executeSupabaseOperation(createEvent);
+  return await executeSupabaseQuery(createEvent);
 };
 
 export const updateEventApi = async ({ id, updates }) => {
@@ -28,10 +28,10 @@ export const updateEventApi = async ({ id, updates }) => {
     .update(updates)
     .eq("id", id)
     .select();
-  return await executeSupabaseOperation(updateEvent);
+  return await executeSupabaseQuery(updateEvent);
 };
 
 export const deleteEventApi = async (id) => {
   const deleteEvent = supabase.from(EVENT_DOMAIN).delete().eq("id", id);
-  return await executeSupabaseOperation(deleteEvent);
+  return await executeSupabaseQuery(deleteEvent);
 };
