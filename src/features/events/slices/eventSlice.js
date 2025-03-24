@@ -13,23 +13,23 @@ export const fetchEvents = createAsyncThunk("events/fetchEvents", async () => {
 });
 export const createEvent = createAsyncThunk(
   "events/createEvent",
-  async (eventData) => {
-    const data = await createEventApi(eventData);
-    return data;
+  async (eventData, { dispatch }) => {
+    await createEventApi(eventData);
+    dispatch(fetchEvents()); // 서버와 클라이언트 동기화 요청
   }
 );
 export const updateEvent = createAsyncThunk(
   "events/updateEvent",
-  async ({ id, updates }) => {
-    const data = await updateEventApi({ id, updates });
-    return data;
+  async ({ id, updates }, { dispatch }) => {
+    await updateEventApi({ id, updates });
+    dispatch(fetchEvents());
   }
 );
 export const deleteEvent = createAsyncThunk(
   "events/deleteEvent",
-  async (id) => {
+  async (id, { dispatch }) => {
     await deleteEventApi(id);
-    return id;
+    dispatch(fetchEvents());
   }
 );
 
@@ -75,29 +75,15 @@ const eventSlice = createSlice({
       .addCase(fetchEvents.rejected, setFailedStatus)
       // createEvent 액션 처리
       .addCase(createEvent.pending, setPendingStatus)
-      .addCase(createEvent.fulfilled, (state, action) => {
-        setSuccessStatus(state);
-        const newEvent = action.payload[0];
-        state.ids.push(newEvent.id);
-        state.entities[newEvent.id] = newEvent;
-      })
+      .addCase(createEvent.fulfilled, setSuccessStatus)
       .addCase(createEvent.rejected, setFailedStatus)
       // updateEvent 액션 처리
       .addCase(updateEvent.pending, setPendingStatus)
-      .addCase(updateEvent.fulfilled, (state, action) => {
-        setSuccessStatus(state);
-        const updatedEvent = action.payload[0];
-        state.entities[updatedEvent.id] = updatedEvent;
-      })
+      .addCase(updateEvent.fulfilled, setSuccessStatus)
       .addCase(updateEvent.rejected, setFailedStatus)
       // deleteEvent 액션 처리
       .addCase(deleteEvent.pending, setPendingStatus)
-      .addCase(deleteEvent.fulfilled, (state, action) => {
-        setSuccessStatus(state);
-        const deletedId = action.payload;
-        state.ids.filter((id) => id !== deletedId);
-        delete state.entities[deletedId];
-      })
+      .addCase(deleteEvent.fulfilled, setSuccessStatus)
       .addCase(deleteEvent.rejected, setFailedStatus);
   },
 });
