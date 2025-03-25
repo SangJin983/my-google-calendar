@@ -18,16 +18,12 @@ export const fetchEventsApi = async () => {
 };
 
 export const createEventApi = async (eventData) => {
-  const createEvent = supabase.from(EVENT_DOMAIN).insert(eventData).select();
+  const createEvent = supabase.from(EVENT_DOMAIN).insert(eventData);
   return await executeSupabaseOperation(createEvent);
 };
 
 export const updateEventApi = async ({ id, updates }) => {
-  const updateEvent = supabase
-    .from(EVENT_DOMAIN)
-    .update(updates)
-    .eq("id", id)
-    .select();
+  const updateEvent = supabase.from(EVENT_DOMAIN).update(updates).eq("id", id);
   return await executeSupabaseOperation(updateEvent);
 };
 
