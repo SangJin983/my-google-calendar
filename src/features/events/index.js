@@ -1,7 +1,9 @@
 export {
+  createEvent,
+  deleteEvent,
   default as eventsReducer,
   fetchEvents,
-  createEvent,
-  updateEvent,
-  deleteEvent,
+  updateEvent
 } from "./slices/eventSlice";
+
+export { default as EventFormComponent } from "./components/EventFormComponent";
