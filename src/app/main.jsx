@@ -1,3 +1,4 @@
+import GlobalStyle from "@common/styles/globalStyles.js";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider as ReduxProvider } from "react-redux";
@@ -9,6 +10,7 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ReduxProvider store={store}>
       <BrowserRouter>
+        <GlobalStyle />
         <App />
       </BrowserRouter>
     </ReduxProvider>

@@ -17,7 +17,8 @@
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.2.0",
-    "styled-components": "^6.1.15"
+    "styled-components": "^6.1.15",
+    "styled-normalize": "^8.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
