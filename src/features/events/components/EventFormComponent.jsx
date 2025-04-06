@@ -52,7 +52,7 @@ const SubmitButton = styled.button`
   }
 `;
 
-const EventFormComponent = () => {
+const EventFormComponent = ({ onSubmit, isSubmitting }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -68,8 +68,23 @@ const EventFormComponent = () => {
   const handleTitleChange = (e) => setTitle(e.target.value);
   const handleDescriptionChange = (e) => setDescription(e.target.value);
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const eventData = {
+      title,
+      description,
+      startTime,
+      endTime,
+    };
+
+    if (onSubmit) {
+      onSubmit(eventData);
+    }
+  };
+
   return (
-    <FormContainer>
+    <FormContainer onSubmit={handleSubmit}>
       <FormGroup>
         <Label htmlFor="title">이벤트 제목</Label>
         <Input
@@ -78,6 +93,7 @@ const EventFormComponent = () => {
           value={title}
           onChange={handleTitleChange}
           placeholder="이벤트 제목을 입력하세요"
+          disabled={isSubmitting}
         />
       </FormGroup>
 
@@ -88,6 +104,7 @@ const EventFormComponent = () => {
           value={description}
           onChange={handleDescriptionChange}
           placeholder="이벤트 설명을 입력하세요 (선택사항)"
+          disabled={isSubmitting}
         />
       </FormGroup>
 
@@ -101,6 +118,7 @@ const EventFormComponent = () => {
           step={3600}
           min={startTimeConstraints.min}
           max={startTimeConstraints.max}
+          disabled={isSubmitting}
         />
       </FormGroup>
 
@@ -114,10 +132,13 @@ const EventFormComponent = () => {
           step={3600}
           min={endTimeConstraints.min}
           max={endTimeConstraints.max}
+          disabled={isSubmitting}
         />
       </FormGroup>
 
-      <SubmitButton>Submit 버튼</SubmitButton>
+      <SubmitButton type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "저장 중..." : "이벤트 저장"}
+      </SubmitButton>
     </FormContainer>
   );
 };
