@@ -1,126 +1,109 @@
-const formatDateToLocalDateTimeString = (date) => {
-  if (!date || Number.isNaN(date.getTime())) {
-    return "";
-  }
-  try {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const hour = date.getHours().toString().padStart(2, "0");
-    const minute = "00"; // 정각으로 고정
+import { logger } from "@common/utils";
+import {
+  addHours,
+  format,
+  isAfter,
+  isBefore,
+  isValid,
+  parse,
+  setHours,
+  startOfDay,
+  startOfHour,
+  subHours,
+} from "date-fns";
 
-    return `${year}-${month}-${day}T${hour}:${minute}`;
-  } catch {
-    return "";
-  }
-};
+const LOCAL_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm";
 
-const adjustTimeToHour = (dateTimeString) => {
+// 현지 시간 문자열 -> Date 객체 변환 및 정시 처리
+const parseAndAdjustTimeToHour = (dateTimeString) => {
   if (!dateTimeString) {
+    return null;
+  }
+  try {
+    // 'yyyy-MM-ddTHH:mm' 형식으로 파싱 시도
+    const parsedDate = parse(dateTimeString, LOCAL_DATETIME_FORMAT, new Date());
+    // 유효한 날짜인지 확인
+    if (!isValid(parsedDate)) {
+      throw new Error("Invalid date format");
+    }
+    // Date에 정시처리
+    return startOfHour(parsedDate);
+  } catch (error) {
+    logger.error("Error parsing date time:", error, dateTimeString);
+    return null;
+  }
+};
+
+// Date 객체 -> 현지 시간 문자열 (YYYY-MM-DDTHH:mm) 변환
+const formatDateToLocalDateTimeString = (date) => {
+  if (!date || !isValid(date)) {
     return "";
   }
   try {
-    const [date, time] = dateTimeString.split("T");
-    const hour = time?.split(":")[0];
-
-    if (hour === undefined) {
-      throw new Error("Invalid time format");
-    }
-
-    const adjustedTime = `${date}T${hour.padStart(2, "0")}:00`;
-
-    return adjustedTime;
+    return format(date, LOCAL_DATETIME_FORMAT);
   } catch (error) {
-    console.error("Error adjusting time:", error, dateTimeString)
-    return dateTimeString;
+    logger.error("Error formating date to local string:", error, date);
+    return "";
   }
 };
 
-const calculateStartTimeConstraints = (endDateTimeString) => {
-  if (!endDateTimeString) {
-    return { min: "", max: "" };
+const dateToUTCISOString = (date) => {
+  if (!date || !isValid(date)) {
+    return "";
   }
   try {
-    const datePart = endDateTimeString.split("T")[0];
-    const minStartTimeLocalString = `${datePart}T00:00`;
+    return date.toISOString();
+  } catch (error) {
+    logger.error("Error converting date to UTC ISO string:", error, date);
+    return "";
+  }
+};
 
-    const maxStartDate = new Date(endDateTimeString); // 정확한 계산을 위해 Date 객체로 변환
-    maxStartDate.setHours(maxStartDate.getHours() - 1);
-    const maxStartTimeLocalString =
-      formatDateToLocalDateTimeString(maxStartDate);
+const calculateStartTimeConstraints = (endDate) => {
+  if (!endDate || !isValid(endDate)) {
+    return { min: null, max: null };
+  }
+  try {
+    const minStartDate = startOfDay(endDate);
+    const maxStartDate = subHours(endDate, 1);
 
-    // min과 max값 비교(종료시간이 00시와 같이, 날짜가 넘어간 케이스 대비)
-    if (maxStartDate < new Date(minStartTimeLocalString)) {
-      return { min: minStartTimeLocalString, max: minStartTimeLocalString };
+    // maxStartDate가 minStartDate 이전인 경우 처리 (ex: 종료 시간이 00시인 경우)
+    if (isBefore(maxStartDate, minStartDate)) {
+      return { min: minStartDate, max: minStartDate };
     }
 
-    return { min: minStartTimeLocalString, max: maxStartTimeLocalString };
-  } catch {
-    return { min: "", max: "" };
+    return { min: minStartDate, max: maxStartDate };
+  } catch (error) {
+    logger.error("Error calculating start time constraints:", error, endDate);
+    return { min: null, max: null };
   }
 };
 
-const calculateEndTimeConstraints = (startDateTimeString) => {
-  if (!startDateTimeString) {
-    return { min: "", max: "" };
+const calculateEndTimeConstraints = (startDate) => {
+  if (!startDate || !isValid(startDate)) {
+    return { min: null, max: null };
   }
   try {
-    const datePart = startDateTimeString.split("T")[0];
-    const maxEndTimeLocalString = `${datePart}T23:00`;
+    const minEndDate = addHours(startDate, 1);
+    const maxEndDate = setHours(startDate, 23);
 
-    const minEndDate = new Date(startDateTimeString);
-    minEndDate.setHours(minEndDate.getHours() + 1);
-    const minEndTimeLocalString = formatDateToLocalDateTimeString(minEndDate);
-
-    // 시작시간 23시와 같이 종료시간 날짜가 넘어가는 케이스 대비
-    if (minEndDate > new Date(maxEndTimeLocalString)) {
-      return { min: maxEndTimeLocalString, max: maxEndTimeLocalString };
+    // minEndDate가 maxEndDate 이후인 경우 처리 (ex: 시작 시간이 23시인 경우)
+    if (isAfter(minEndDate, maxEndDate)) {
+      return { min: maxEndDate, max: maxEndDate };
     }
 
-    return { min: minEndTimeLocalString, max: maxEndTimeLocalString };
-  } catch {
-    return { min: "", max: "" };
-  }
-};
-
-const isTimeBefore = (time1LocalString, time2LocalString) => {
-  if (!time1LocalString || !time2LocalString) {
-    return false;
-  }
-  try {
-    return new Date(time1LocalString) < new Date(time2LocalString);
-  } catch {
-    return false;
-  }
-};
-
-const isTimeAfter = (time1LocalString, time2LocalString) => {
-  if (!time1LocalString || !time2LocalString) {
-    return false;
-  }
-  try {
-    return new Date(time1LocalString) > new Date(time2LocalString);
-  } catch {
-    return false;
-  }
-};
-
-const areSameLocalDateString = (dateTimeString1, dateTimeString2) => {
-  if (!dateTimeString1 || !dateTimeString2) {
-    return false;
-  }
-  try {
-    return dateTimeString1.split("T")[0] === dateTimeString2.split("T")[0];
-  } catch {
-    return false;
+    return { min: minEndDate, max: maxEndDate };
+  } catch (error) {
+    logger.error("Error calculating end time constraints:", error, startDate);
+    return { min: null, max: null };
   }
 };
 
 export {
-  adjustTimeToHour,
-  areSameLocalDateString,
   calculateEndTimeConstraints,
   calculateStartTimeConstraints,
-  isTimeBefore,
-  isTimeAfter,
+  dateToUTCISOString,
+  formatDateToLocalDateTimeString,
+  parseAndAdjustTimeToHour
 };
+
