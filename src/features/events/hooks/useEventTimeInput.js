@@ -1,89 +1,112 @@
-import { useState } from "react";
+import { isAfter, isBefore, isSameDay } from "date-fns";
+import { useMemo, useState } from "react";
 import {
-  adjustTimeToHour,
-  areSameLocalDateString,
   calculateEndTimeConstraints,
   calculateStartTimeConstraints,
-  isTimeAfter,
-  isTimeBefore,
+  formatDateToLocalDateTimeString,
+  parseAndAdjustTimeToHour,
 } from "../utils/timeUtils";
 
-const initialConstraints = { min: "", max: "" };
+const initialConstraints = { min: null, max: null };
 
-export const useEventTimeInput = () => {
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+export const useEventTimeInput = (
+  initialStartTime = "",
+  initialEndTime = ""
+) => {
+  const [startTime, setStartTime] = useState(
+    parseAndAdjustTimeToHour(initialStartTime)
+  );
+  const [endTime, setEndTime] = useState(
+    parseAndAdjustTimeToHour(initialEndTime)
+  );
   const [startTimeConstraints, setStartTimeConstraints] =
     useState(initialConstraints);
   const [endTimeConstraints, setEndTimeConstraints] =
     useState(initialConstraints);
 
-  const handleStartTimeChange = (e) => {
-    const adjustedStartTime = adjustTimeToHour(e.target.value);
-    setStartTime(adjustedStartTime);
+  const startTimeLocalString = useMemo(
+    () => formatDateToLocalDateTimeString(startTime),
+    [startTime]
+  );
+  const endTimeLocalString = useMemo(() =>
+    formatDateToLocalDateTimeString(endTime, [endTime])
+  );
+  const startTimeConstraintStrings = useMemo(
+    () => ({
+      min: formatDateToLocalDateTimeString(startTimeConstraints.min),
+      max: formatDateToLocalDateTimeString(startTimeConstraints.max),
+    }),
+    [startTimeConstraints]
+  );
+  const endTimeConstraintStrings = useMemo(
+    () => ({
+      min: formatDateToLocalDateTimeString(endTimeConstraints.min),
+      max: formatDateToLocalDateTimeString(endTimeConstraints.max),
+    }),
+    [endTimeConstraints]
+  );
 
-    // 시작시간 입력 초기화시("")
-    if (!adjustedStartTime) {
-      // 시작시간과 종료시간의 제약 조건 초기화
+  const handleStartTimeChange = (e) => {
+    const newStartTime = parseAndAdjustTimeToHour(e.target.value);
+    setStartTime(newStartTime);
+
+    if (!newStartTime) {
+      // startTime 입력 초기화 시, 시간 제약조건 모두 초기화
       setStartTimeConstraints(initialConstraints);
       setEndTimeConstraints(initialConstraints);
-      // endTime이 있을경우
       if (endTime) {
-        // 시작시간 제약 조건 다시 설정
+        // endTime 있을 경우, 시작시간 제약조건 다시 설정
         const constraints = calculateStartTimeConstraints(endTime);
         setStartTimeConstraints(constraints);
       }
-      return; // early return
+      return;
     }
-
-    // 시작시간 입력 시, 종료 시간 제약 설정
-    const constraints = calculateEndTimeConstraints(adjustedStartTime);
+    // startTime 입력 시, 종료시간 제약조건 설정
+    const constraints = calculateEndTimeConstraints(newStartTime);
     setEndTimeConstraints(constraints);
 
-    // 종료시간 제약 조건 확인 및 초기화 로직
+    // 종료 시간 초기화 로직
     if (
       endTime &&
-      (isTimeBefore(endTime, constraints.min) ||
-        !areSameLocalDateString(endTime, adjustedStartTime))
+      constraints.min &&
+      (isBefore(endTime, constraints.min) || !isSameDay(endTime, newStartTime))
     ) {
-      setEndTime("");
+      setEndTime(null);
     }
   };
 
   const handleEndTimeChange = (e) => {
-    const adjustedEndTime = adjustTimeToHour(e.target.value);
-    setEndTime(adjustedEndTime);
+    const newEndDate = parseAndAdjustTimeToHour(e.target.value);
+    setEndTime(newEndDate);
 
-    // 종료시간 입력 초기화 시 로직
-    if (!adjustedEndTime) {
-      setEndTimeConstraints(initialConstraints);
+    if (!newEndDate) {
       setStartTimeConstraints(initialConstraints);
-
+      setEndTimeConstraints(initialConstraints);
       if (startTime) {
         const constraints = calculateEndTimeConstraints(startTime);
         setEndTimeConstraints(constraints);
       }
       return;
     }
-
-    // 종료시간 입력 시, 시작 시간 제약 설정
-    const constraints = calculateStartTimeConstraints(adjustedEndTime);
+    // endTime 입력 시, 시작시간 제약조건 설정
+    const constraints = calculateStartTimeConstraints(newEndDate);
     setStartTimeConstraints(constraints);
-    // 시작 시간 제약조건 확인 및 초기화 로직
+
+    // 시작 시간 초기화 로직
     if (
       startTime &&
-      (isTimeAfter(startTime, constraints.max) ||
-        !areSameLocalDateString(startTime, adjustedEndTime))
+      constraints.max &&
+      (isAfter(startTime, constraints.max) || !isSameDay(startTime, newEndDate))
     ) {
-      setStartTime("");
+      setStartTime(null);
     }
   };
 
   return {
-    startTime,
-    endTime,
-    startTimeConstraints,
-    endTimeConstraints,
+    startTime: startTimeLocalString,
+    endTime: endTimeLocalString,
+    startTimeConstraints: startTimeConstraintStrings,
+    endTimeConstraints: endTimeConstraintStrings,
     handleStartTimeChange,
     handleEndTimeChange,
   };
