@@ -3,7 +3,13 @@ export {
   deleteEvent,
   default as eventsReducer,
   fetchEvents,
-  updateEvent
+  resetEventStatus,
+  updateEvent,
 } from "./slices/eventSlice";
+
+export {
+  dateToUTCISOString,
+  parseAndAdjustTimeToHour,
+} from "./utils/timeUtils";
 
 export { default as EventFormComponent } from "./components/EventFormComponent";
