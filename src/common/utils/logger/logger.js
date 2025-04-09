@@ -2,6 +2,7 @@ import { LOG_LEVELS } from "@common/constants";
 import { LOGGER_CONFIG } from "@config/loggerConfig";
 
 const CURRENT_LOG_LEVEL = LOGGER_CONFIG.LEVEL;
+const CURRENT_LOG_HANDLER = LOGGER_CONFIG.HANDLER;
 
 const getLogLevelName = (levelValue) => {
   return (
@@ -65,27 +66,29 @@ const log = (level, message, ...args) => {
   }
 
   const formattedMessage = formatLogMessage(level, message, args);
+  const levelName = getLogLevelName(level);
 
-  switch (level) {
-    case LOG_LEVELS.DEBUG:
-      console.debug(formattedMessage);
-      break;
-    case LOG_LEVELS.INFO:
-      console.info(formattedMessage);
-      break;
-    case LOG_LEVELS.WARN:
-      console.warn(formattedMessage);
-      break;
-    case LOG_LEVELS.ERROR:
-      console.error(formattedMessage);
-      break;
-    default:
-      console.log(formattedMessage); // 알 수 없는 경우는 기본 log 사용
-      break;
+  // 주입된 핸들러의 handleLog 메서드 호출
+  try {
+    // 핸들러가 존재하고 handleLog 메서드가 있는지 확인
+    if (
+      CURRENT_LOG_HANDLER &&
+      typeof CURRENT_LOG_HANDLER.handleLog === "function"
+    ) {
+      CURRENT_LOG_HANDLER.handleLog(level, levelName, formattedMessage);
+    } else {
+      // 핸들러가 없거나 잘못된 경우 대비
+      console.error("Logger handler is not configured correctly.");
+      console.log(`[${levelName}] ${formattedMessage}`);
+    }
+  } catch (handlerError) {
+    // 핸들러 자체의 오류인 경우
+    console.error("Logging handler failed:", handlerError);
+    console.error("Original log message:", formattedMessage);
   }
 };
 
-const logger = {
+export const logger = {
   debug: (msg, ...args) => log(LOG_LEVELS.DEBUG, msg, ...args),
   info: (msg, ...args) => log(LOG_LEVELS.INFO, msg, ...args),
   warn: (msg, ...args) => log(LOG_LEVELS.WARN, msg, ...args),
@@ -98,5 +101,3 @@ const logger = {
     }
   },
 };
-
-export default logger;
