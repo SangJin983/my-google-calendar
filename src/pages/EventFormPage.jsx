@@ -1,15 +1,13 @@
 import { ErrorMessage } from "@common/components";
 import { STATUS } from "@common/constants";
 import { Err, isErr, logger, Ok } from "@common/utils";
-import { EventFormComponent } from "@features/events";
 import {
   createEvent,
-  resetEventStatus,
-} from "@features/events/slices/eventSlice";
-import {
   dateToUTCISOString,
+  EventFormComponent,
   parseAndAdjustTimeToHour,
-} from "@features/events/utils/timeUtils";
+  resetEventStatus,
+} from "@features/events";
 import { differenceInHours, isSameDay } from "date-fns";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
