@@ -52,11 +52,17 @@ const setFailedStatus = (state, action) => {
   state.status = STATUS.FAILED;
   state.error = action.error.message;
 };
+const setIdleStatus = (state) => {
+  state.status = STATUS.IDLE;
+  state.error = null;
+};
 
 const eventSlice = createSlice({
   name: "events",
   initialState,
-  reducers: {},
+  reducers: {
+    resetEventStatus: setIdleStatus,
+  },
   extraReducers: (builder) => {
     builder
       // fetchEvents 액션 처리
@@ -88,4 +94,5 @@ const eventSlice = createSlice({
   },
 });
 
+export const { resetEventStatus } = eventSlice.actions;
 export default eventSlice.reducer;
