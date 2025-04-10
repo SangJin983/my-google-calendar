@@ -12,12 +12,10 @@ const ErrorWrapper = styled.div`
   align-items: center;
 `;
 
-const ErrorMessage = ({ message }) => {
+export const ErrorMessage = ({ message }) => {
   if (!message) {
     return null;
   }
 
   return <ErrorWrapper>{message}</ErrorWrapper>;
 };
-
-export default ErrorMessage;
