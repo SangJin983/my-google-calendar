@@ -52,7 +52,7 @@ const SubmitButton = styled.button`
   }
 `;
 
-const EventFormComponent = ({ onSubmit, isSubmitting }) => {
+const EventFormComponent = ({ onSubmit, isLoading }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -70,17 +70,8 @@ const EventFormComponent = ({ onSubmit, isSubmitting }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    const eventData = {
-      title,
-      description,
-      startTime,
-      endTime,
-    };
-
-    if (onSubmit) {
-      onSubmit(eventData);
-    }
+    // prettier-ignore
+    onSubmit?.({ title, description, startTime, endTime }); // Optional Chaining 사용
   };
 
   return (
@@ -93,7 +84,7 @@ const EventFormComponent = ({ onSubmit, isSubmitting }) => {
           value={title}
           onChange={handleTitleChange}
           placeholder="이벤트 제목을 입력하세요"
-          disabled={isSubmitting}
+          disabled={isLoading}
         />
       </FormGroup>
 
@@ -104,7 +95,7 @@ const EventFormComponent = ({ onSubmit, isSubmitting }) => {
           value={description}
           onChange={handleDescriptionChange}
           placeholder="이벤트 설명을 입력하세요 (선택사항)"
-          disabled={isSubmitting}
+          disabled={isLoading}
         />
       </FormGroup>
 
@@ -118,7 +109,7 @@ const EventFormComponent = ({ onSubmit, isSubmitting }) => {
           step={3600}
           min={startTimeConstraints.min}
           max={startTimeConstraints.max}
-          disabled={isSubmitting}
+          disabled={isLoading}
         />
       </FormGroup>
 
@@ -132,12 +123,12 @@ const EventFormComponent = ({ onSubmit, isSubmitting }) => {
           step={3600}
           min={endTimeConstraints.min}
           max={endTimeConstraints.max}
-          disabled={isSubmitting}
+          disabled={isLoading}
         />
       </FormGroup>
 
-      <SubmitButton type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "저장 중..." : "이벤트 저장"}
+      <SubmitButton type="submit" disabled={isLoading}>
+        {isLoading ? "저장 중..." : "이벤트 저장"}
       </SubmitButton>
     </FormContainer>
   );
