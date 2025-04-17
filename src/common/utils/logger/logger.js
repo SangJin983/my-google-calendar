@@ -1,9 +1,6 @@
 import { LOG_LEVELS } from "@common/constants";
-import { LOGGER_CONFIG } from "@config/loggerConfig";
 
-const CURRENT_LOG_LEVEL = LOGGER_CONFIG.LEVEL;
-const CURRENT_LOG_HANDLER = LOGGER_CONFIG.HANDLER;
-
+// --- 유틸 함수 ---
 const getLogLevelName = (levelValue) => {
   return (
     Object.keys(LOG_LEVELS).find((key) => LOG_LEVELS[key] === levelValue) ||
@@ -60,44 +57,55 @@ const formatLogMessage = (level, message, args) => {
   return `${baseMessage}${formattedArgsMessage}`;
 };
 
-const log = (level, message, ...args) => {
-  if (level < CURRENT_LOG_LEVEL) {
-    return;
+// --- 로거 생성 함수 ---
+/**
+ * 주입 받은 설정으로 로거 인스턴스를 생성합니다.
+ * @param {object} config - 로거 설정 객체
+ * @param {number} config.level - 로그 레벨 (숫자)
+ * @param {object} config.handler - 로그 핸들러 객체 (handleLog 메서드 필요)
+ * @return {object} - logger 인스턴스 (debug, info, warn, error 메서드 포함)
+ */
+const createLogger = (config) => {
+  if (typeof config?.level !== "number" || !config?.handler?.handleLog) {
+    console.error(
+      "유효 하지 않은 로거 설정이 주입되었습니다. 기본 콘솔 로거를 사용합니다.",
+      config
+    );
+    return {
+      debug: console.debug,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+    };
   }
 
-  const formattedMessage = formatLogMessage(level, message, args);
-  const levelName = getLogLevelName(level);
+  const CURRENT_LOG_LEVEL = config.level;
+  const CURRENT_LOG_HANDLER = config.handler;
 
-  // 주입된 핸들러의 handleLog 메서드 호출
-  try {
-    // 핸들러가 존재하고 handleLog 메서드가 있는지 확인
-    if (
-      CURRENT_LOG_HANDLER &&
-      typeof CURRENT_LOG_HANDLER.handleLog === "function"
-    ) {
+  const log = (level, message, ...args) => {
+    if (level < CURRENT_LOG_LEVEL) {
+      return;
+    }
+
+    const formattedMessage = formatLogMessage(level, message, args);
+    const levelName = getLogLevelName(level);
+
+    try {
+      // 설정에서 주입 받은 핸들러 사용
       CURRENT_LOG_HANDLER.handleLog(level, levelName, formattedMessage);
-    } else {
-      // 핸들러가 없거나 잘못된 경우 대비
-      console.error("Logger handler is not configured correctly.");
-      console.log(`[${levelName}] ${formattedMessage}`);
+    } catch (handlerError) {
+      console.error("Logging handler failed:", handlerError);
+      console.error("Original log message:", formattedMessage);
     }
-  } catch (handlerError) {
-    // 핸들러 자체의 오류인 경우
-    console.error("Logging handler failed:", handlerError);
-    console.error("Original log message:", formattedMessage);
-  }
+  };
+
+  // 최종 로거 인스턴스 반환
+  return {
+    debug: (msg, ...args) => log(LOG_LEVELS.DEBUG, msg, ...args),
+    info: (msg, ...args) => log(LOG_LEVELS.INFO, msg, ...args),
+    warn: (msg, ...args) => log(LOG_LEVELS.WARN, msg, ...args),
+    error: (msg, ...args) => log(LOG_LEVELS.ERROR, msg, ...args),
+  };
 };
 
-export const logger = {
-  debug: (msg, ...args) => log(LOG_LEVELS.DEBUG, msg, ...args),
-  info: (msg, ...args) => log(LOG_LEVELS.INFO, msg, ...args),
-  warn: (msg, ...args) => log(LOG_LEVELS.WARN, msg, ...args),
-  // Error 객체의 필요성을 명시적으로 표현
-  error: (msg, errorObject, ...args) => {
-    if (errorObject instanceof Error) {
-      log(LOG_LEVELS.ERROR, msg, errorObject, ...args);
-    } else {
-      log(LOG_LEVELS.ERROR, msg, errorObject, ...args);
-    }
-  },
-};
+export { createLogger };
