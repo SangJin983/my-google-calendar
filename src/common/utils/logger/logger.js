@@ -59,9 +59,9 @@ const formatLogMessage = (level, message, args) => {
   return `${baseMessage}${formattedArgsMessage}`;
 };
 
-// --- 로거 생성 함수 ---
+// --- 로거 생성(초기화) 함수 ---
 /**
- * 주입 받은 설정으로 로거 인스턴스를 생성합니다.
+ * 주입 받은 설정으로 로거 인스턴스를 초기화합니다.
  * @param {object} config - 로거 설정 객체
  * @param {number} config.level - 로그 레벨 (숫자)
  * @param {object} config.handler - 로그 핸들러 객체 (handleLog 메서드 필요)
@@ -110,4 +110,4 @@ const createLogger = (config) => {
   };
 };
 
-export { logger };
+export { createLogger, logger };
