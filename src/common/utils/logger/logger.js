@@ -1,5 +1,7 @@
 import { LOG_LEVELS } from "@common/constants";
 
+let logger;
+
 // --- 유틸 함수 ---
 const getLogLevelName = (levelValue) => {
   return (
@@ -100,7 +102,7 @@ const createLogger = (config) => {
   };
 
   // 최종 로거 인스턴스 반환
-  return {
+  logger = {
     debug: (msg, ...args) => log(LOG_LEVELS.DEBUG, msg, ...args),
     info: (msg, ...args) => log(LOG_LEVELS.INFO, msg, ...args),
     warn: (msg, ...args) => log(LOG_LEVELS.WARN, msg, ...args),
@@ -108,4 +110,4 @@ const createLogger = (config) => {
   };
 };
 
-export { createLogger };
+export { logger };
