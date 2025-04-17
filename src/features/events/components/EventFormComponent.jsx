@@ -52,7 +52,7 @@ const SubmitButton = styled.button`
   }
 `;
 
-const EventFormComponent = () => {
+const EventFormComponent = ({ onSubmit, isLoading }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -68,8 +68,14 @@ const EventFormComponent = () => {
   const handleTitleChange = (e) => setTitle(e.target.value);
   const handleDescriptionChange = (e) => setDescription(e.target.value);
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // prettier-ignore
+    onSubmit?.({ title, description, startTime, endTime }); // Optional Chaining 사용
+  };
+
   return (
-    <FormContainer>
+    <FormContainer onSubmit={handleSubmit}>
       <FormGroup>
         <Label htmlFor="title">이벤트 제목</Label>
         <Input
@@ -78,6 +84,7 @@ const EventFormComponent = () => {
           value={title}
           onChange={handleTitleChange}
           placeholder="이벤트 제목을 입력하세요"
+          disabled={isLoading}
         />
       </FormGroup>
 
@@ -88,6 +95,7 @@ const EventFormComponent = () => {
           value={description}
           onChange={handleDescriptionChange}
           placeholder="이벤트 설명을 입력하세요 (선택사항)"
+          disabled={isLoading}
         />
       </FormGroup>
 
@@ -101,6 +109,7 @@ const EventFormComponent = () => {
           step={3600}
           min={startTimeConstraints.min}
           max={startTimeConstraints.max}
+          disabled={isLoading}
         />
       </FormGroup>
 
@@ -114,10 +123,13 @@ const EventFormComponent = () => {
           step={3600}
           min={endTimeConstraints.min}
           max={endTimeConstraints.max}
+          disabled={isLoading}
         />
       </FormGroup>
 
-      <SubmitButton>Submit 버튼</SubmitButton>
+      <SubmitButton type="submit" disabled={isLoading}>
+        {isLoading ? "저장 중..." : "이벤트 저장"}
+      </SubmitButton>
     </FormContainer>
   );
 };
