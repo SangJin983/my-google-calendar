@@ -4,12 +4,14 @@ export {
   default as eventsReducer,
   fetchEvents,
   resetEventStatus,
-  updateEvent,
+  updateEvent
 } from "./slices/eventSlice";
 
 export {
   dateToUTCISOString,
-  parseAndAdjustTimeToHour,
+  parseAndAdjustTimeToHour
 } from "./utils/timeUtils";
 
 export { default as EventFormComponent } from "./components/EventFormComponent";
+
+export { fetchEventByIdApi } from "./api/eventApi";
