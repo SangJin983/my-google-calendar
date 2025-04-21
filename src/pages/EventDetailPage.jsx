@@ -1,11 +1,12 @@
 import { ErrorMessage } from "@common/components";
+import { UUID_REGEX } from "@common/constants";
 import { Err, isOk, logger, Ok } from "@common/utils";
-import { fetchEventByIdApi } from "@features/events";
+import { EventNotFoundError, fetchEventByIdApi } from "@features/events";
 import { format, isValid, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
 const DetailContainer = styled.div`
@@ -76,14 +77,6 @@ const Button = styled.button`
   }
 `;
 
-class EventNotFoundError extends Error {
-  constructor(id) {
-    super(`이벤트 ID ${id} 를 발견하지 못 했습니다.`);
-    this.name = "EventNotFoundError";
-    this.eventId = id;
-  }
-}
-
 const formatEventTimeKST = (timeString) => {
   if (!timeString) {
     return Err(new Error("시간 정보 없음"));
@@ -103,17 +96,18 @@ const formatEventTimeKST = (timeString) => {
   }
 };
 
-// 정규 표현식 연습용
-const UUID_REGEX =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
 const EventDetailPage = () => {
   const { eventId } = useParams();
+  const navigate = useNavigate();
   const eventFromStore = useSelector((state) => state.events.entities[eventId]);
 
   const [displayEvent, setDisplayEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const handleEditClick = () => {
+    navigate(`/events/${eventId}/edit`);
+  };
 
   useEffect(() => {
     if (!eventId || !UUID_REGEX.test(eventId)) {
@@ -199,7 +193,7 @@ const EventDetailPage = () => {
         </span>
       </InfoSection>
       <ButtonContainer>
-        <Button onClick={() => alert("수정 기능 구현 예정")}>수정</Button>
+        <Button onClick={handleEditClick}>수정</Button>
         <Button className="delete" onClick={() => alert("삭제 기능 구현 예정")}>
           삭제
         </Button>
