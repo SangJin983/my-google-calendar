@@ -6,17 +6,19 @@ import {
   isBefore,
   isValid,
   parse,
+  parseISO,
   setHours,
   startOfDay,
   startOfHour,
   subHours,
 } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 // -- 커스텀 에러 정의 --
 class InvalidDateFormatError extends Error {
   constructor(message = "Invalid date format") {
     super(message);
-    this.name = "InvaildDateFormatError";
+    this.name = "InvalidDateFormatError";
   }
 }
 class DateCalculationError extends Error {
@@ -27,6 +29,7 @@ class DateCalculationError extends Error {
 }
 
 const LOCAL_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm";
+const USER_TIME_ZONE = "Asia/Seoul";
 
 // 현지 시간 문자열 -> Date 객체 변환 및 정시 처리
 const parseAndAdjustTimeToHour = (dateTimeString) => {
@@ -79,6 +82,30 @@ const dateToUTCISOString = (date) => {
   }
 };
 
+/**
+ * UTC ISO 문자열을 로컬 시간대 기준으로 "yyyy-MM-ddTHH:mm" 형식으로 변환합니다
+ * @param {string} ustIsoString 변환할 UTC ISO 문자열
+ * @return {Result<string, Error>} 변환할 로컬 시간 문자열 도는 에러
+ */
+const convertUtcToLocalDateTimeString = (utcIsoString) => {
+  if (!utcIsoString) {
+    return Err(new Error("Input UTC string is empty"));
+  }
+  try {
+    const utcDate = parseISO(utcIsoString);
+    if (!isValid(utcDate)) {
+      return Err(new Error(`Invalid UTC ISO string format: ${utcIsoString}`));
+    }
+    return Ok(formatInTimeZone(utcDate, USER_TIME_ZONE, LOCAL_DATETIME_FORMAT));
+  } catch (error) {
+    logger.error(
+      `Error converting UTC to Local DateTime string for ${utcIsoString}:`,
+      error
+    );
+    return Err(new Error("Failed to convert UTC to Local DateTime string"));
+  }
+};
+
 const calculateStartTimeConstraints = (endDate) => {
   if (!endDate || !isValid(endDate)) {
     return Err(new Error("Invalid end date provided"));
@@ -123,9 +150,11 @@ const calculateEndTimeConstraints = (startDate) => {
 export {
   calculateEndTimeConstraints,
   calculateStartTimeConstraints,
+  convertUtcToLocalDateTimeString,
   DateCalculationError,
   dateToUTCISOString,
   formatDateToLocalDateTimeString,
   InvalidDateFormatError,
-  parseAndAdjustTimeToHour,
+  parseAndAdjustTimeToHour
 };
+
