@@ -9,6 +9,11 @@ const GlobalStyle = createGlobalStyle`
   *::after {
     box-sizing: border-box; // 보다 정확한 높이와 너비를 위한 전역 box-sizing 설정
   }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
 `;
 
 export default GlobalStyle;
