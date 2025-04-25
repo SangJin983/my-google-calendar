@@ -1,3 +1,4 @@
+import { logger } from "@common/utils";
 import { useState } from "react";
 import styled from "styled-components";
 import { useEventTimeInput } from "../hooks/useEventTimeInput";
@@ -52,9 +53,11 @@ const SubmitButton = styled.button`
   }
 `;
 
-const EventFormComponent = ({ onSubmit, isLoading }) => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+const EventFormComponent = ({ onSubmit, isLoading, initialData = null }) => {
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
 
   const {
     startTime,
@@ -63,7 +66,7 @@ const EventFormComponent = ({ onSubmit, isLoading }) => {
     endTimeConstraints,
     handleStartTimeChange,
     handleEndTimeChange,
-  } = useEventTimeInput();
+  } = useEventTimeInput(initialData?.startTime, initialData?.endTime);
 
   const handleTitleChange = (e) => setTitle(e.target.value);
   const handleDescriptionChange = (e) => setDescription(e.target.value);

@@ -1,6 +1,7 @@
 import { NavBar } from "@common/components";
 import CalendarPage from "@pages/CalendarPage";
 import EventDetailPage from "@pages/EventDetailPage";
+import { EventEditPage } from "@pages/EventEditPage";
 import EventFormPage from "@pages/EventFormPage";
 import { Navigate, Route, Routes } from "react-router-dom";
 import styled from "styled-components";
