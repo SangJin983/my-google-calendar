@@ -88,7 +88,8 @@ export const useEventTimeInput = (
     setEndTimeConstraints(constraintsResult);
 
     // 종료시간 초기화 로직
-    if (isOk(constraintsResult)) { // 제약 조건 계산 성공 시에만 비교
+    if (isOk(constraintsResult)) {
+      // 제약 조건 계산 성공 시에만 비교
       const constraints = constraintsResult.value;
       if (
         endTime &&
