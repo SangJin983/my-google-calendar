@@ -1,16 +1,16 @@
 import { isErr, logger } from "@common/utils";
 import {
   DAY_VIEW_EVENT_LEFT,
-  DAY_VIEW_EVENT_WIDTH
+  DAY_VIEW_EVENT_WIDTH,
 } from "@features/calendar/constants/calendarConstants";
 import {
   calculateEventPosition,
   calculateHorizontalLayout,
 } from "@features/calendar/utils/eventLayoutUtils";
 import { compareAsc, parseISO } from "date-fns";
+import { useMemo } from "react";
 import styled from "styled-components";
 import { CalendarEvent } from "./CalendarEvent";
-import { useMemo } from "react";
 
 const LaneContainer = styled.div`
   position: relative;
@@ -23,12 +23,7 @@ const LaneContainer = styled.div`
   }
 `;
 
-export const EventLane = ({ specificDate, events, viewMode }) => {
-  logger.debug(`EventLane 렌더링 for ${viewMode} view`, {
-    eventCount: events.length,
-    date: specificDate,
-  });
-
+export const EventLane = ({ events }) => {
   // --- 레이아웃 계산 로직 ---
   const eventsWithLayout = useMemo(() => {
     // 이벤트 정렬

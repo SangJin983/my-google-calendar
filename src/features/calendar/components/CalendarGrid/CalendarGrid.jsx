@@ -180,7 +180,6 @@ const filterEventsForDate = (allEvents, targetDate) => {
  * @param {"day" | "week"} props.viewMode - 보기 모드 ("day" 또는 "week")
  */
 export const CalendarGrid = ({ currentDate, events, viewMode }) => {
-  logger.debug("CalendarGrid 렌더링", { viewMode, eventCount: events.length });
   const hours = HOURS_IN_DAY;
 
   const displayDatesResult =
@@ -199,11 +198,7 @@ export const CalendarGrid = ({ currentDate, events, viewMode }) => {
       {/* 상단: 날짜 축 영역 */}
       <DateAxisArea>
         <TimeAxisGap />
-        <DateAxis
-          currentDate={currentDate}
-          viewMode={viewMode}
-          displayDates={displayDates}
-        />
+        <DateAxis displayDates={displayDates} />
       </DateAxisArea>
 
       {/* 하단: 스크롤 가능한 컨텐츠 영역 */}
@@ -230,9 +225,7 @@ export const CalendarGrid = ({ currentDate, events, viewMode }) => {
           {displayDates.map((date) => (
             <EventLane
               key={date.toISOString()}
-              specificDate={date}
               events={filterEventsForDate(events, date)}
-              viewMode={viewMode}
             />
           ))}
         </ContentArea>
