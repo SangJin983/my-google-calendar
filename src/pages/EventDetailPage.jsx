@@ -1,11 +1,16 @@
-import { ErrorMessage } from "@common/components";
-import { UUID_REGEX } from "@common/constants";
+import { ConfirmModal, ErrorMessage } from "@common/components";
+import { STATUS, UUID_REGEX } from "@common/constants";
 import { Err, isOk, logger, Ok } from "@common/utils";
-import { EventNotFoundError, fetchEventByIdApi } from "@features/events";
+import {
+  deleteEvent,
+  EventNotFoundError,
+  fetchEventByIdApi,
+  resetEventStatus,
+} from "@features/events";
 import { format, isValid, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
@@ -99,21 +104,41 @@ const formatEventTimeKST = (timeString) => {
 const EventDetailPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const eventFromStore = useSelector((state) => state.events.entities[eventId]);
+  const eventDeleteStatus = useSelector((state) => state.events.status);
+  const eventDeleteError = useSelector((state) => state.events.error);
 
   const [displayEvent, setDisplayEvent] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const isDeleting = eventDeleteStatus === STATUS.LOADING;
 
   const handleEditClick = () => {
     navigate(`/events/${eventId}/edit`);
   };
 
+  const handleDeleteClick = useCallback(() => {
+    setIsDeleteModalOpen(true);
+  }, []);
+  const handleCloseModal = useCallback(() => {
+    setIsDeleteModalOpen(false);
+  }, []);
+  const handleConfirmDelete = useCallback(async () => {
+    setIsDeleteModalOpen(false);
+    logger.info(`[EventDetailPage] Dispatching deleteEvent for ID: ${eventId}`);
+
+    dispatch(deleteEvent(eventId));
+  }, [eventId]);
+
   useEffect(() => {
     if (!eventId || !UUID_REGEX.test(eventId)) {
       logger.warn(`[EventDetailPage] Invalid UUID format received: ${eventId}`);
-      setError("유효하지 않은 이벤트 ID 형식입니다.");
-      setIsLoading(false);
+      setLoadError("유효하지 않은 이벤트 ID 형식입니다.");
+      setIsLoadingData(false);
       setDisplayEvent(null);
       return;
     }
@@ -121,13 +146,13 @@ const EventDetailPage = () => {
     // 스토어에 이벤트가 있는지 확인
     if (eventFromStore) {
       setDisplayEvent(eventFromStore);
-      setIsLoading(false);
+      setIsLoadingData(false);
       return;
     }
 
     const fetchMissingEvent = async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoadingData(true);
+      setLoadError(null);
 
       try {
         const data = await fetchEventByIdApi(eventId);
@@ -137,27 +162,46 @@ const EventDetailPage = () => {
         setDisplayEvent(data);
       } catch (error) {
         if (error instanceof EventNotFoundError) {
-          setError(error.message);
+          setLoadError(error.message);
         } else {
           logger.error(
             `[EventDetailPage] Event ID ${eventId} 를 불러오는 것을 실패했습니다:`,
             error
           );
-          setError(`이벤트를 불러오는 중 오류가 발생했습니다`);
+          setLoadError(`이벤트를 불러오는 중 오류가 발생했습니다`);
         }
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     };
 
     fetchMissingEvent();
   }, [eventId, eventFromStore]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (eventDeleteStatus === STATUS.SUCCEEDED) {
+      dispatch(resetEventStatus());
+      navigate("/calendar", { replace: true });
+    }
+    if (eventDeleteStatus === STATUS.FAILED && eventDeleteError) {
+      logger.error(
+        `[EventDetailPage] Failed to delete event ${eventId}:`,
+        eventDeleteError
+      );
+    }
+
+    return () => {
+      if (eventDeleteStatus === STATUS.FAILED) {
+        dispatch(resetEventStatus());
+      }
+    };
+  }, [eventDeleteStatus]);
+
+  if (isLoadingData) {
     return <LoadingSpinner>이벤트 정보 로딩 중...</LoadingSpinner>;
   }
-  if (error) {
-    return <ErrorMessage message={error} />;
+  if (loadError) {
+    return <ErrorMessage message={loadError} />;
   }
   if (!displayEvent) {
     logger.warn(
@@ -170,35 +214,51 @@ const EventDetailPage = () => {
   const endTimeResult = formatEventTimeKST(displayEvent.end_time);
 
   return (
-    <DetailContainer>
-      <EventHeader>{displayEvent.title}</EventHeader>
-      <InfoSection>
-        <strong>설명:</strong>
-        <span>{displayEvent.description || ""}</span>
-      </InfoSection>
-      <InfoSection>
-        <strong>시작:</strong>
-        <span>
-          {isOk(startTimeResult)
-            ? startTimeResult.value
-            : startTimeResult.error.message}
-        </span>
-      </InfoSection>
-      <InfoSection>
-        <strong>종료:</strong>
-        <span>
-          {isOk(endTimeResult)
-            ? endTimeResult.value
-            : endTimeResult.error.message}
-        </span>
-      </InfoSection>
-      <ButtonContainer>
-        <Button onClick={handleEditClick}>수정</Button>
-        <Button className="delete" onClick={() => alert("삭제 기능 구현 예정")}>
-          삭제
-        </Button>
-      </ButtonContainer>
-    </DetailContainer>
+    <>
+      <DetailContainer>
+        <EventHeader>{displayEvent.title}</EventHeader>
+        <InfoSection>
+          <strong>설명:</strong>
+          <span>{displayEvent.description || ""}</span>
+        </InfoSection>
+        <InfoSection>
+          <strong>시작:</strong>
+          <span>
+            {isOk(startTimeResult)
+              ? startTimeResult.value
+              : startTimeResult.error.message}
+          </span>
+        </InfoSection>
+        <InfoSection>
+          <strong>종료:</strong>
+          <span>
+            {isOk(endTimeResult)
+              ? endTimeResult.value
+              : endTimeResult.error.message}
+          </span>
+        </InfoSection>
+        <ButtonContainer>
+          <Button onClick={handleEditClick} disabled={isDeleting}>
+            수정
+          </Button>
+          <Button
+            className="delete"
+            onClick={handleDeleteClick}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "삭제 중..." : "삭제"}
+          </Button>
+        </ButtonContainer>
+          {eventDeleteError && <ErrorMessage message={eventDeleteError} />}
+      </DetailContainer>
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirmDelete}
+        title="이벤트 삭제 확인"
+        message={`${displayEvent.title} 이벤트를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
+      />
+    </>
   );
 };
 
