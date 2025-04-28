@@ -4,8 +4,7 @@ import { Err, isOk, logger, Ok } from "@common/utils";
 import {
   deleteEvent,
   EventNotFoundError,
-  fetchEventByIdApi,
-  resetEventStatus,
+  fetchEventByIdApi
 } from "@features/events";
 import { format, isValid, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -188,7 +187,6 @@ const EventDetailPage = () => {
       await dispatch(deleteEvent(eventId)).unwrap();
 
       logger.info(`[EvnetDetailPage] Event ${eventId} deleted succesfully.`);
-      dispatch(resetEventStatus());
       navigate("/calendar", { replace: true });
     } catch (error) {
       logger.error(
@@ -196,7 +194,6 @@ const EventDetailPage = () => {
         error
       );
       setDeleteError(error?.message || "이벤트 삭제 중 오류가 발생했습니다.");
-      dispatch(resetEventStatus());
     } finally {
       setIsDeleting(false);
     }

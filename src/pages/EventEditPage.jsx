@@ -7,9 +7,8 @@ import {
   EventFormComponent,
   EventNotFoundError,
   fetchEventByIdApi,
-  resetEventStatus,
   updateEvent,
-  validateEventData,
+  validateEventData
 } from "@features/events";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -152,7 +151,6 @@ export const EventEditPage = () => {
         await dispatch(updateEvent({ id: eventId, updates })).unwrap();
 
         logger.info(`[EventEditPage] Event ${eventId} updated successfully.`);
-        dispatch(resetEventStatus());
         navigate(`/events/${eventId}`, { replace: true });
       } catch (error) {
         logger.error(
@@ -160,7 +158,6 @@ export const EventEditPage = () => {
           error
         );
         setSubmitError(error.message || "이벤트 수정 중 오류가 발생했습니다");
-        dispatch(resetEventStatus());
       } finally {
         setIsSubmitting(false);
       }
