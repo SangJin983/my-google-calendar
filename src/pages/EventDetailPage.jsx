@@ -1,11 +1,10 @@
 import { ConfirmModal, ErrorMessage } from "@common/components";
-import { STATUS, UUID_REGEX } from "@common/constants";
+import { UUID_REGEX } from "@common/constants";
 import { Err, isOk, logger, Ok } from "@common/utils";
 import {
   deleteEvent,
   EventNotFoundError,
-  fetchEventByIdApi,
-  resetEventStatus,
+  fetchEventByIdApi
 } from "@features/events";
 import { format, isValid, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -107,32 +106,13 @@ const EventDetailPage = () => {
   const dispatch = useDispatch();
 
   const eventFromStore = useSelector((state) => state.events.entities[eventId]);
-  const eventDeleteStatus = useSelector((state) => state.events.status);
-  const eventDeleteError = useSelector((state) => state.events.error);
 
   const [displayEvent, setDisplayEvent] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const isDeleting = eventDeleteStatus === STATUS.LOADING;
-
-  const handleEditClick = () => {
-    navigate(`/events/${eventId}/edit`);
-  };
-
-  const handleDeleteClick = useCallback(() => {
-    setIsDeleteModalOpen(true);
-  }, []);
-  const handleCloseModal = useCallback(() => {
-    setIsDeleteModalOpen(false);
-  }, []);
-  const handleConfirmDelete = useCallback(async () => {
-    setIsDeleteModalOpen(false);
-    logger.info(`[EventDetailPage] Dispatching deleteEvent for ID: ${eventId}`);
-
-    dispatch(deleteEvent(eventId));
-  }, [eventId]);
 
   useEffect(() => {
     if (!eventId || !UUID_REGEX.test(eventId)) {
@@ -143,59 +123,81 @@ const EventDetailPage = () => {
       return;
     }
 
-    // 스토어에 이벤트가 있는지 확인
-    if (eventFromStore) {
-      setDisplayEvent(eventFromStore);
-      setIsLoadingData(false);
-      return;
-    }
+    setIsLoadingData(true);
+    setLoadError(null);
+    setDeleteError(null);
 
-    const fetchMissingEvent = async () => {
-      setIsLoadingData(true);
-      setLoadError(null);
+    const loadInitialEvent = async () => {
+      if (eventFromStore) {
+        setDisplayEvent(eventFromStore);
+        setIsLoadingData(false);
+        return;
+      }
 
       try {
+        logger.warn(
+          `[EventDetailPage] Event ${eventId} not found in store. Fetching from API.`
+        );
         const data = await fetchEventByIdApi(eventId);
         if (data === null) {
           throw new EventNotFoundError(eventId);
         }
         setDisplayEvent(data);
       } catch (error) {
+        logger.error(
+          `[EventDetailPage] Failed to load initial data for ${eventId}:`,
+          error
+        );
         if (error instanceof EventNotFoundError) {
           setLoadError(error.message);
         } else {
-          logger.error(
-            `[EventDetailPage] Event ID ${eventId} 를 불러오는 것을 실패했습니다:`,
-            error
+          setLoadError(
+            error.message || "이벤트 정보를 불러오는 중 오류가 발생했습니다."
           );
-          setLoadError(`이벤트를 불러오는 중 오류가 발생했습니다`);
         }
       } finally {
         setIsLoadingData(false);
       }
     };
 
-    fetchMissingEvent();
+    loadInitialEvent();
   }, [eventId, eventFromStore]);
 
-  useEffect(() => {
-    if (eventDeleteStatus === STATUS.SUCCEEDED) {
-      dispatch(resetEventStatus());
+  const handleEditClick = () => {
+    navigate(`/events/${eventId}/edit`);
+  };
+
+  const handleDeleteClick = useCallback(() => {
+    setDeleteError(null);
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsDeleteModalOpen(false);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    setIsDeleteModalOpen(false);
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    logger.info(`[EventDetailPage] Dispatching deleteEvent for ID: ${eventId}`);
+
+    try {
+      await dispatch(deleteEvent(eventId)).unwrap();
+
+      logger.info(`[EvnetDetailPage] Event ${eventId} deleted succesfully.`);
       navigate("/calendar", { replace: true });
-    }
-    if (eventDeleteStatus === STATUS.FAILED && eventDeleteError) {
+    } catch (error) {
       logger.error(
         `[EventDetailPage] Failed to delete event ${eventId}:`,
-        eventDeleteError
+        error
       );
+      setDeleteError(error?.message || "이벤트 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
     }
-
-    return () => {
-      if (eventDeleteStatus === STATUS.FAILED) {
-        dispatch(resetEventStatus());
-      }
-    };
-  }, [eventDeleteStatus]);
+  }, [eventId]);
 
   if (isLoadingData) {
     return <LoadingSpinner>이벤트 정보 로딩 중...</LoadingSpinner>;
@@ -204,9 +206,6 @@ const EventDetailPage = () => {
     return <ErrorMessage message={loadError} />;
   }
   if (!displayEvent) {
-    logger.warn(
-      "[EventDetailPage] Rendering with no event data after loading/error handling."
-    );
     return <ErrorMessage message={"이벤트 정보를 표시할 수 없습니다"} />;
   }
 
@@ -249,14 +248,14 @@ const EventDetailPage = () => {
             {isDeleting ? "삭제 중..." : "삭제"}
           </Button>
         </ButtonContainer>
-          {eventDeleteError && <ErrorMessage message={eventDeleteError} />}
+        {deleteError && <ErrorMessage message={deleteError} />}
       </DetailContainer>
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={handleCloseModal}
         onConfirm={handleConfirmDelete}
         title="이벤트 삭제 확인"
-        message={`${displayEvent.title} 이벤트를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
+        message={`"${displayEvent.title}" 이벤트를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
       />
     </>
   );

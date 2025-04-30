@@ -27,6 +27,7 @@ function App() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/events/new" element={<EventFormPage />} />
           <Route path="/events/:eventId" element={<EventDetailPage />} />
+          <Route path="/events/:eventId/edit" element={<EventEditPage />} />
 
           <Route path="*" element={<div>404 Not Found</div>} />
         </Routes>
